@@ -29,13 +29,25 @@ panel <- panel_raw %>%
          year_month = format(fecha, "%Y-%m"),
          year       = year(fecha))
 
+# semana_ord must count calendar weeks. Older panels numbered only the weeks
+# present in the data, so a multi-year gap collapsed into a few "weeks" and the
+# 26-week event buffers lost their meaning.
+semana_cal <- as.integer((floor_date(panel$fecha, "week", week_start = 1) -
+                          floor_date(min(panel$fecha), "week", week_start = 1)) / 7)
+if (!identical(rank(panel$semana_ord, ties.method = "min"), rank(semana_cal, ties.method = "min")) ||
+    max(panel$semana_ord) - min(panel$semana_ord) != max(semana_cal)) {
+  message("Recomputing semana_ord as a calendar-week index (input counted only observed weeks).")
+}
+panel$semana_ord <- semana_cal
+
 # ---- Coverage check -----------------------------------------------------------
 # A year with far fewer station-weeks than the rest means raw files were lost
 # or misparsed when the panel was built; every downstream number would be wrong.
 cobertura_anual <- panel %>% count(year, name = "obs")
 print(cobertura_anual, n = Inf)
 interior <- cobertura_anual %>% filter(year > min(year), year < max(year))
-huecos <- interior %>% filter(obs < 0.25 * median(cobertura_anual$obs))
+# Benchmark is the best-covered year: when most years are broken, the median is too.
+huecos <- interior %>% filter(obs < 0.25 * max(cobertura_anual$obs))
 if (nrow(huecos) > 0 && !isTRUE(getOption("sc.allow_gaps", FALSE))) {
   stop("Panel coverage collapses in: ", paste(huecos$year, collapse = ", "),
        ". Check data/raw_file_report.csv (python scripts/build_panel.py --report-only). ",
