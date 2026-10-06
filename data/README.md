@@ -2,13 +2,27 @@
 
 Input files are not versioned (see `.gitignore`). All come from the public *Bencina en Línea* / *Energía Abierta* portal of Chile's National Energy Commission (CNE): https://www.energiaabierta.cl
 
-Place these files directly in this folder before running `run_all.R`:
+There are two ways to reproduce the analysis:
+
+1. **Start from a pre-built station-week panel (fastest):** place `panel_estacion_semana.csv` directly in `data/`.
+2. **Rebuild the panel from the raw CNE archive:** place the historical raw CSVs in `data/raw_cne/`. `R/01_build_panel.R` will call `scripts/build_panel.py` automatically when the pre-built panel is absent. Install the Python dependencies first with `pip install -r requirements.txt`.
+
+Optional inputs can also be placed directly in `data/`:
 
 | File | Required | Used in | Content |
 |---|---|---|---|
-| `panel_estacion_semana.csv` | Yes | all scripts | Station-week panel (built by `R/01_build_panel.R`) |
+| `panel_estacion_semana.csv` | Yes* | all scripts | Station-week panel; may be supplied directly or rebuilt by `R/01_build_panel.R` |
 | `sh_precios_margenes_semanales_rm.xlsx` | No | `R/06_mechanisms.R` | Weekly parity price, retail price and gross margin, Metropolitan Region (descriptive only) |
 | `pares_distancia_manejo.csv` | No | `R/03_main_analysis.R` | Sample of station pairs with Haversine and Google Maps driving distance (validation only) |
+
+
+`*` Required unless `data/raw_cne/` contains the historical CNE CSV files needed to rebuild it.
+
+## Raw CNE files
+
+The raw files are not versioned. The builder is based on the original processing script used in this project: it handles the historical delimiter/encoding differences, harmonises fuel codes, keeps 93-octane gasoline, takes the last reported price in each station-week, and counts active competitors within 1, 2, 3 and 5 km using Haversine distance. Entry and exit events are **not** defined in Python; they are constructed once, downstream, in `R/02_clean_data.R`.
+
+Because the public archive has changed formats over time, a rebuild from raw files should be checked against the summary statistics reported in the paper before replacing an existing validated panel.
 
 ## `panel_estacion_semana.csv`
 

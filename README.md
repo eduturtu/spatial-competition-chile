@@ -1,7 +1,5 @@
 # Spatial Competition and Retail Gasoline Prices in Chile
 
-[Read the paper (PDF, in Spanish)](paper/paper_competencia_espacial.pdf)
-
 Does the entry or exit of a nearby gas station change the prices of incumbent stations? I apply the event-study design of Taylor and Muehlegger (2025) to a station-week panel of retail gasoline prices from Chile's National Energy Commission (CNE): about 962,000 observations from 2,032 stations over 743 weeks, 2012–2026.
 
 Methods: two-way fixed effects · event study · spatial competition measures (Haversine, validated against driving distances) · window and block-dynamics diagnostics · Rambachan–Roth (HonestDiD) sensitivity to parallel-trends violations · Conley standard errors
@@ -28,7 +26,7 @@ source("run_all.R")
 
 This checks dependencies, cleans the data, builds entry and exit events, estimates every model, writes tables and figures to `output/` (README figures to `figures/`) and compiles the paper. Console logs for each step go to `output/logs/`.
 
-Requirements: R ≥ 4.2 and the packages listed in `R/00_setup.R` (`renv::restore()` installs the pinned versions from `renv.lock`). The input data must be placed in `data/` as described in [`data/README.md`](data/README.md).
+Requirements: R ≥ 4.2 and the packages listed in `R/00_setup.R`. If a `renv.lock` file is present, `run_all.R` restores the pinned R environment automatically; after the first successful full-data run, create and commit it with `renv::init()` / `renv::snapshot()`. A validated `data/panel_estacion_semana.csv` is sufficient to reproduce the econometric analysis. To rebuild that panel from the raw CNE archive, Python 3 plus `pip install -r requirements.txt` are also required. See [`data/README.md`](data/README.md).
 
 | Step | Script | Content |
 |---|---|---|
@@ -46,8 +44,10 @@ Requirements: R ≥ 4.2 and the packages listed in `R/00_setup.R` (`renv::restor
 .
 ├── README.md
 ├── run_all.R
-├── renv.lock
+├── renv.lock        pinned R environment (generate after the full-data run)
 ├── R/              analysis scripts (run in order by run_all.R)
+├── scripts/        Python builder for the raw CNE archive
+├── requirements.txt Python dependencies needed only to rebuild the panel
 ├── data/           input data (not versioned; see data/README.md)
 ├── figures/        main figures shown in this README (versioned)
 ├── output/         all generated tables, figures and logs (not versioned)
