@@ -17,11 +17,30 @@ cat(sprintf("Dropped: price > %d: %d | price < %d: %d | NA: %d (%.2f%% of total)
             PRICE_MAX, n_high, PRICE_MIN, n_low, n_na,
             100 * (n_high + n_low + n_na) / nrow(panel_raw)))
 
+if (!inherits(panel_raw$fecha, "Date")) {
+  stop("`fecha` must be a date without time of day (found ", class(panel_raw$fecha)[1],
+       "). Rebuild the panel with scripts/build_panel.py.", call. = FALSE)
+}
+
 panel <- panel_raw %>%
   filter(!is.na(precio), precio >= PRICE_MIN, precio <= PRICE_MAX) %>%
-  mutate(log_precio = log(precio),
+  mutate(across(c(distribuidor, nom_comuna, nom_region), norm_text),
+         log_precio = log(precio),
          year_month = format(fecha, "%Y-%m"),
          year       = year(fecha))
+
+# ---- Coverage check -----------------------------------------------------------
+# A year with far fewer station-weeks than the rest means raw files were lost
+# or misparsed when the panel was built; every downstream number would be wrong.
+cobertura_anual <- panel %>% count(year, name = "obs")
+print(cobertura_anual, n = Inf)
+interior <- cobertura_anual %>% filter(year > min(year), year < max(year))
+huecos <- interior %>% filter(obs < 0.25 * median(cobertura_anual$obs))
+if (nrow(huecos) > 0 && !isTRUE(getOption("sc.allow_gaps", FALSE))) {
+  stop("Panel coverage collapses in: ", paste(huecos$year, collapse = ", "),
+       ". Check data/raw_file_report.csv (python scripts/build_panel.py --report-only). ",
+       "Set options(sc.allow_gaps = TRUE) to run anyway.", call. = FALSE)
+}
 
 cat(sprintf("Clean observations: %s | stations: %d | weeks: %d | period: %s to %s\n",
             format(nrow(panel), big.mark = ","), n_distinct(panel$codigo),

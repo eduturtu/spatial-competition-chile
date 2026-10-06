@@ -4,7 +4,7 @@
 # Every other script starts with source(here::here("R", "00_setup.R")).
 # =============================================================================
 
-required_pkgs <- c("here", "tidyverse", "fixest", "lubridate", "modelsummary",
+required_pkgs <- c("here", "tidyverse", "fixest", "lubridate", "modelsummary", "rmarkdown",
                    "readxl", "HonestDiD")
 
 missing_pkgs <- required_pkgs[!vapply(required_pkgs, requireNamespace,
@@ -112,6 +112,20 @@ event_panel <- function(panel, events, window = 52) {
            post = as.integer(semana_ord >= sem_evento)) %>%
     filter(abs(t) <= window)
 }
+
+# Text normalisation: UTF-8 read as latin1 ("ValparaÃ­so"), case and spacing
+# differences across archive eras ("Sin Bandera" vs "SIN BANDERA").
+fix_mojibake <- function(x) {
+  bad <- !is.na(x) & grepl("\u00c3|\u00c2", x)
+  if (any(bad)) {
+    fixed <- iconv(x[bad], from = "UTF-8", to = "latin1")
+    Encoding(fixed) <- "UTF-8"
+    ok <- !is.na(fixed) & validUTF8(fixed)
+    x[bad][ok] <- fixed[ok]
+  }
+  x
+}
+norm_text <- function(x) toupper(stringr::str_squish(fix_mojibake(as.character(x))))
 
 section <- function(title) cat("\n", strrep("=", 70), "\n ", title, "\n", strrep("=", 70), "\n", sep = "")
 

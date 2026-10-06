@@ -36,7 +36,12 @@ for (s in steps) {
     finally = { sink(); close(con) })
 }
 
-# 8. Compile the paper
-message("Compiling paper/paper_competencia_espacial.Rmd")
-rmarkdown::render(here::here("paper", "paper_competencia_espacial.Rmd"), quiet = TRUE)
-message("Done. Paper: paper/paper_competencia_espacial.pdf | Tables and figures: output/ | README figures: figures/")
+# 8. Compile the paper (needs pandoc: bundled with RStudio, or https://pandoc.org)
+if (rmarkdown::pandoc_available()) {
+  message("Compiling paper/paper_competencia_espacial.Rmd")
+  rmarkdown::render(here::here("paper", "paper_competencia_espacial.Rmd"), quiet = TRUE)
+  message("Done. Paper: paper/paper_competencia_espacial.pdf | Tables and figures: output/ | README figures: figures/")
+} else {
+  message("Analysis done. Paper NOT compiled: pandoc not found. ",
+          "Run run_all.R from RStudio or install pandoc, then rmarkdown::render('paper/paper_competencia_espacial.Rmd').")
+}

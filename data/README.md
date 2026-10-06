@@ -24,6 +24,14 @@ The raw files are not versioned. The builder is based on the original processing
 
 Because the public archive has changed formats over time, a rebuild from raw files should be checked against the summary statistics reported in the paper before replacing an existing validated panel.
 
+To check how each raw file is parsed without building the panel (fast):
+
+```
+python scripts/build_panel.py --raw-dir data/raw_cne --output data/panel_estacion_semana.csv --report-only
+```
+
+This writes `data/raw_file_report.csv` with the rows of each file that survive each step (fuel code, date, price, coordinates) and prints examples from any file that loses more than 20% of its rows. `R/02_clean_data.R` also stops if any year of the panel has less than a quarter of the typical yearly coverage.
+
 ## `panel_estacion_semana.csv`
 
 One row per station and week. Columns used:

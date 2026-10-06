@@ -129,7 +129,7 @@ eventos_cal <- ev$eventos_cal
 
 panel_evento <- panel %>%
   filter(codigo %in% eventos_cal$codigo) %>%
-  inner_join(eventos_cal, by = "codigo") %>%
+  inner_join(eventos_cal, by = "codigo", relationship = "many-to-many") %>%  # an incumbent can have both an entry and an exit
   mutate(dias_al_evento = as.numeric(fecha - fecha_evento),
          semanas_al_evento = floor(dias_al_evento / 7),
          post = as.integer(fecha >= fecha_evento)) %>%
@@ -257,8 +257,15 @@ tryCatch({
 # =============================================================================
 section("10. Export")
 
-ms <- function(models, file, title) modelsummary(models, output = file.path(dir_output, file),
-                                                 stars = stars_ms, title = title)
+# LaTeX tables always; Word copies only when pandoc is available
+# (RStudio bundles it; plain R/Rscript usually does not).
+has_pandoc <- rmarkdown::pandoc_available()
+ms <- function(models, file, title) {
+  modelsummary(models, output = file.path(dir_output, sub("\\.docx$", ".tex", file)),
+               stars = stars_ms, title = title)
+  if (has_pandoc) modelsummary(models, output = file.path(dir_output, file),
+                               stars = stars_ms, title = title)
+}
 ms(list("1 km" = modelo_1km, "2 km" = modelo_2km, "3 km" = modelo_3km, "5 km" = modelo_5km),
    "tabla1_twfe_radios.docx", "Effect of local competition by radius (TWFE)")
 ms(list("Pre 1km" = modelo_pre_1km, "Post 1km" = modelo_post_1km,
