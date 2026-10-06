@@ -5,7 +5,7 @@
 # =============================================================================
 
 required_pkgs <- c("here", "tidyverse", "fixest", "lubridate", "modelsummary", "rmarkdown",
-                   "readxl", "HonestDiD")
+                   "readxl", "HonestDiD", "spacefillr")
 
 missing_pkgs <- required_pkgs[!vapply(required_pkgs, requireNamespace,
                                       logical(1), quietly = TRUE)]

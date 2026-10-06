@@ -11,7 +11,7 @@
 # =============================================================================
 
 source(here::here("R", "00_setup.R"))
-library(HonestDiD)
+library(HonestDiD)   # also needs spacefillr (loaded internally for robust CIs)
 
 panel <- load_clean()
 ev    <- load_events()
