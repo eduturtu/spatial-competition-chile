@@ -31,9 +31,9 @@ One row per station and week. Columns used:
 | Column | Description |
 |---|---|
 | `codigo` | Station identifier (CNE) |
-| `fecha` | Date of the weekly observation |
+| `fecha` | Date (no time of day) of the last price report in the station-week |
 | `year_week` | Year-week identifier (week fixed effect) |
-| `semana_ord` | Consecutive week index used to define events |
+| `semana_ord` | Calendar-week index from the first ISO week in the data (weeks without reports still count) |
 | `precio` | Retail price of 93-octane gasoline, CLP per litre |
 | `latitud`, `longitud` | Station coordinates |
 | `distribuidor` | Brand (Copec, Shell, Petrobras, Aramco, independents) |

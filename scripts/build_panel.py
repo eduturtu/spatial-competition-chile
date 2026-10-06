@@ -138,17 +138,20 @@ def build_weekly_panel(raw: pd.DataFrame, fuel: str = "93") -> pd.DataFrame:
     df["year_week"] = df["iso_year"].astype(str) + "-W" + df["iso_week"].astype(str).str.zfill(2)
 
     # Last reported price in each station-week, as in the original processor.
-    df = df.sort_values("fecha")
-    keep = ["precio", "fecha", "latitud", "longitud", *OPTIONAL_PANEL]
-    panel = (
-        df.groupby(["codigo", "year_week"], as_index=False, sort=False)[keep]
-        .last()
-    )
+    # A stable sort plus drop_duplicates keeps the whole last row (groupby().last()
+    # would mix columns from different rows when some fields are missing).
+    df = df.sort_values(["codigo", "fecha"], kind="mergesort")
+    keep = ["codigo", "year_week", "precio", "fecha", "latitud", "longitud", *OPTIONAL_PANEL]
+    panel = df.drop_duplicates(["codigo", "year_week"], keep="last")[keep].reset_index(drop=True)
 
-    # Preserve the original project's consecutive-week index convention.
-    weeks = sorted(panel["year_week"].unique(), key=lambda s: (int(s[:4]), int(s[-2:])))
-    week_index = {week: i for i, week in enumerate(weeks)}
-    panel["semana_ord"] = panel["year_week"].map(week_index).astype(int)
+    # Report date without time of day, so R reads `fecha` as a Date.
+    panel["fecha"] = panel["fecha"].dt.normalize()
+
+    # Consecutive week index counted from the first ISO week in the data. Weeks
+    # with no reports in the archive still advance the index, so the 26-week
+    # event buffers in R are measured in calendar weeks.
+    monday = panel["fecha"] - pd.to_timedelta(panel["fecha"].dt.weekday, unit="D")
+    panel["semana_ord"] = ((monday - monday.min()).dt.days // 7).astype(int)
 
     return panel
 
@@ -231,10 +234,11 @@ def main() -> int:
     ]
     panel = panel[order].sort_values(["codigo", "semana_ord"]).reset_index(drop=True)
     args.output.parent.mkdir(parents=True, exist_ok=True)
+    panel["fecha"] = panel["fecha"].dt.strftime("%Y-%m-%d")
     panel.to_csv(args.output, index=False)
     print(
         f"Wrote {args.output}: {len(panel):,} rows | {panel['codigo'].nunique():,} stations | "
-        f"{panel['year_week'].nunique():,} weeks | {panel['fecha'].min().date()} to {panel['fecha'].max().date()}"
+        f"{panel['year_week'].nunique():,} weeks | {panel['fecha'].min()} to {panel['fecha'].max()}"
     )
     return 0
 

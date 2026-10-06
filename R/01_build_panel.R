@@ -25,18 +25,27 @@ if (file.exists(path_panel_raw)) {
   }
   if (!file.exists(builder)) stop("Panel builder not found: ", builder, call. = FALSE)
 
-  python_candidates <- unname(Sys.which(c("python", "python3")))
+  # First interpreter on PATH that runs and has pandas + numpy installed
+  # (skips the Windows Store "python" stub and interpreters without the deps).
+  python_candidates <- unname(Sys.which(c("python3", "python", "py")))
   python_candidates <- python_candidates[nzchar(python_candidates)]
-  if (length(python_candidates) == 0L) {
-    stop("Python 3 was not found on PATH. See data/README.md.", call. = FALSE)
+  usable <- vapply(python_candidates, function(p) {
+    out <- suppressWarnings(system2(p, c("-c", shQuote("import pandas, numpy")),
+                                    stdout = FALSE, stderr = FALSE))
+    identical(as.integer(out), 0L)
+  }, logical(1))
+  if (!any(usable)) {
+    stop("No Python 3 interpreter with pandas and numpy was found on PATH. ",
+         "Run: pip install -r requirements.txt", call. = FALSE)
   }
-  python <- python_candidates[[1]]
+  python <- python_candidates[usable][[1]]
 
   message(sprintf("Building station-week panel from %d raw CNE files...", length(raw_files)))
   status <- system2(
     python,
-    args = c(builder, "--raw-dir", raw_dir, "--output", path_panel_raw, "--fuel", "93")
-  if (!identical(status, 0L)) {
+    args = shQuote(c(builder, "--raw-dir", raw_dir, "--output", path_panel_raw, "--fuel", "93"))
+  )
+  if (!identical(as.integer(status), 0L)) {
     stop("Python panel builder failed with exit status ", status, call. = FALSE)
   }
 }
