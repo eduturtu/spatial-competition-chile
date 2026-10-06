@@ -1,13 +1,13 @@
 # Spatial Competition and Retail Gasoline Prices in Chile
 
-Does the entry or exit of a nearby gas station change the prices of incumbent stations? I apply the event-study design of Taylor and Muehlegger (2025) to a station-week panel of retail gasoline prices from Chile's National Energy Commission (CNE): about 962,000 observations from 2,032 stations over 743 weeks, 2012–2026.
+Does the entry or exit of a nearby gas station change the prices of incumbent stations? I apply the event-study design of Taylor and Muehlegger (2025) to a station-week panel of retail gasoline prices from Chile's National Energy Commission (CNE): about 973,000 station-weeks from 2,022 stations over 743 weeks (January 2012 to March 2026), built from 9.2 million raw price reports.
 
 Methods: two-way fixed effects · event study · spatial competition measures (Haversine, validated against driving distances) · window and block-dynamics diagnostics · Rambachan–Roth (HonestDiD) sensitivity to parallel-trends violations · Conley standard errors
 
 ## Main findings
 
-- Exit has a precisely estimated null effect. The exit of a competitor within 1 km leaves incumbent prices unchanged: the 95% confidence interval rules out effects larger than about 0.1% of the retail price. The null survives alternative clustering and a test for selection of exiting stations.
-- The apparent entry effect is not robust. A ±52-week DiD gives an entry effect of −0.21%. However, incumbent prices are already falling before entry, the trajectory crosses zero without a break at the event, the effect disappears in narrower windows, and the Rambachan–Roth confidence set includes zero once post-period violations are allowed to be half the size of pre-period ones (M̄ = 0.5).
+- Exit has a precisely estimated null effect. The exit of a competitor within 1 km leaves incumbent prices unchanged: the 95% confidence interval rules out effects larger than about 0.1% of the retail price. The null holds in every event window (±13 to ±52 weeks), with clustering by station or municipality and Conley errors, for rival-brand exits, and after removing exits that may reflect selection.
+- The apparent entry effect is not robust. A ±52-week DiD gives an entry effect of −0.18%. However, incumbent prices are already falling before entry: both pre-entry blocks are positive and significant relative to the quarter before entry, and the trajectory declines steadily through the event without a break. The estimate shrinks as the window narrows and is indistinguishable from zero at ±13 weeks. I assess its robustness to parallel-trends violations with Rambachan–Roth (HonestDiD) sensitivity analysis.
 - Common shocks dominate price variation. Week fixed effects account for 98.4% of the variation in log retail prices, highlighting the importance of common national shocks. This pattern is consistent with the dominant role of common wholesale-cost movements and with pricing mechanisms documented in the Chilean gasoline-market literature (Lemus and Luco 2021; Luco 2019). The decomposition does not by itself identify which common component matters, or tacit coordination.
 
 ![Incumbent price around nearby entry](figures/pretrend_bloques.png)
@@ -16,7 +16,7 @@ Methods: two-way fixed effects · event study · spatial competition measures (H
 
 ![HonestDiD sensitivity](figures/honestdid_rival.png)
 
-*Rambachan–Roth robust confidence sets for the average post-entry effect (rival-brand entry). The set includes zero from M̄ = 0.5.*
+*Rambachan–Roth robust confidence sets for the average post-entry effect (rival-brand entry), as a function of how large post-entry violations of parallel trends may be relative to pre-entry ones (M̄).*
 
 ## Reproducing the results
 
@@ -56,7 +56,7 @@ Requirements: R ≥ 4.2 and the packages listed in `R/00_setup.R`. If a `renv.lo
 
 ## Data
 
-All inputs are public, from the CNE's *Bencina en Línea* / *Energía Abierta* portal (https://www.energiaabierta.cl). They are not versioned because of their size. The driving-distance sample used to validate Haversine distances comes from the Google Maps API and is optional; the analysis runs without it.
+All inputs are public, from the CNE's *Bencina en Línea* / *Energía Abierta* portal (https://www.energiaabierta.cl): one compressed CSV per year, 2012 to 2026 (about 100 MB). They are not versioned because of their size. `scripts/build_panel.py` turns them into the station-week panel; [`data/README.md`](data/README.md) documents the archive's format changes and how the panel handles them (2012 onboarding, the 2022/2023 change of system, brand histories). The driving-distance sample used to validate Haversine distances comes from the Google Maps API and is optional; the analysis runs without it.
 
 ## References
 

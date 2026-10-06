@@ -28,6 +28,7 @@ panel <- panel_raw %>%
          log_precio = log(precio),
          year_month = format(fecha, "%Y-%m"),
          year       = year(fecha))
+if (!is.na(SAMPLE_END)) panel <- panel %>% filter(fecha <= SAMPLE_END)
 
 # semana_ord must count calendar weeks. Older panels numbered only the weeks
 # present in the data, so a multi-year gap collapsed into a few "weeks" and the
@@ -78,28 +79,37 @@ ubicaciones <- panel %>%
 # ---- Station life on the weekly index ---------------------------------------
 vida <- panel %>%
   group_by(codigo) %>%
-  summarise(prim = min(semana_ord), ult = max(semana_ord), nobs = n(), .groups = "drop") %>%
+  summarise(prim = min(semana_ord), ult = max(semana_ord), nobs = n(),
+            prim_fecha = min(fecha), ult_fecha = max(fecha), .groups = "drop") %>%
   mutate(span = ult - prim + 1,
          faltantes = span - nobs,
          share_faltante = faltantes / span)
+
+censurados <- vida %>%
+  filter(ult_fecha >= ARCHIVE_SEAM[1], ult_fecha <= ARCHIVE_SEAM[2]) %>% pull(codigo)
+cat(sprintf("Stations censored at the December 2022 archive seam: %d\n", length(censurados)))
 
 s_min <- min(panel$semana_ord)
 s_max <- max(panel$semana_ord)
 
 # ---- Event definitions ------------------------------------------------------
-# Entry = first appearance at least BUF_WEEKS after the start of the sample;
-# exit  = last appearance at least BUF_WEEKS before the end of the sample.
+# Entry = first appearance at least BUF_WEEKS after the start of the sample and
+#         not before ENTRY_START (platform onboarding in 2012);
+# exit  = last appearance at least BUF_WEEKS before the end of the sample,
+#         excluding stations censored at the 2022 archive seam.
 entradas <- vida %>%
-  filter(prim > s_min + BUF_WEEKS, nobs >= MIN_OBS_EV, !(codigo %in% cambios_marca)) %>%
+  filter(prim > s_min + BUF_WEEKS, prim_fecha >= ENTRY_START, nobs >= MIN_OBS_EV,
+         !(codigo %in% cambios_marca)) %>%
   transmute(codigo, sem_evento = prim)
 
 salidas <- vida %>%
-  filter(ult < s_max - BUF_WEEKS, nobs >= MIN_OBS_EV, !(codigo %in% cambios_marca)) %>%
+  filter(ult < s_max - BUF_WEEKS, nobs >= MIN_OBS_EV, !(codigo %in% cambios_marca),
+         !(codigo %in% censurados)) %>%
   transmute(codigo, sem_evento = ult)
 
 incumbentes <- vida %>%
   filter(!(codigo %in% entradas$codigo), !(codigo %in% salidas$codigo),
-         nobs >= MIN_OBS_INC) %>%
+         !(codigo %in% censurados), nobs >= MIN_OBS_INC) %>%
   left_join(ubicaciones, by = "codigo")
 
 cat(sprintf("Entries: %d | Exits: %d | Incumbents: %d\n",
@@ -124,18 +134,18 @@ vida_fecha <- panel %>%
   summarise(primera_fecha = min(fecha), ultima_fecha = max(fecha), n_obs = n(), .groups = "drop")
 
 entradas_cal <- vida_fecha %>%
-  filter(primera_fecha > as.Date("2012-12-31"), primera_fecha > fecha_min_panel + 180,
+  filter(primera_fecha >= ENTRY_START, primera_fecha > fecha_min_panel + 180,
          n_obs >= MIN_OBS_EV, !(codigo %in% cambios_marca)) %>%
   select(codigo, fecha_entrada = primera_fecha)
 
 salidas_cal <- vida_fecha %>%
   filter(ultima_fecha < as.Date("2025-12-31"), ultima_fecha < fecha_max_panel - 180,
-         n_obs >= MIN_OBS_EV, !(codigo %in% cambios_marca)) %>%
+         n_obs >= MIN_OBS_EV, !(codigo %in% cambios_marca), !(codigo %in% censurados)) %>%
   select(codigo, fecha_salida = ultima_fecha)
 
 incumbentes_cal <- vida_fecha %>%
   filter(!(codigo %in% entradas_cal$codigo), !(codigo %in% salidas_cal$codigo),
-         n_obs >= MIN_OBS_INC) %>%
+         !(codigo %in% censurados), n_obs >= MIN_OBS_INC) %>%
   left_join(ubicaciones %>% select(codigo, lat, lon, nom_comuna, nom_region, distribuidor),
             by = "codigo")
 

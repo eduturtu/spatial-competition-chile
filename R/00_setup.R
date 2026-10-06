@@ -43,6 +43,19 @@ MIN_OBS_INC <- 50     # minimum reported weeks for an incumbent
 RADIUS_KM  <- 1       # local market radius
 MEPCO_DATE <- as.Date("2014-07-01")
 
+# Sample window. SAMPLE_END reproduces the paper's sample (743 weeks); set it
+# to NA to use every week in the panel.
+SAMPLE_END  <- as.Date("2026-03-22")
+# Bencina en Linea launched in 2012 and stations joined the platform during that
+# year: a first report in 2012 is onboarding, not entry.
+ENTRY_START <- as.Date("2013-01-01")
+# Archive seam: the historical yearly files end in December 2022 and the new
+# system starts in 2023. About 130 stations have their last report in the last
+# days of 2022 and never appear in the new system. Their disappearance is a
+# change of data source, not an observed closure, so they are treated as
+# censored (neither exits nor incumbents).
+ARCHIVE_SEAM <- as.Date(c("2022-12-15", "2022-12-31"))
+
 # ---- Helpers ----------------------------------------------------------------
 haversine <- function(lat1, lon1, lat2, lon2) {
   R <- 6371
