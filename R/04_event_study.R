@@ -38,6 +38,7 @@ window_table <- map_dfr(c("Entry" = "ent", "Exit" = "sal"), function(k) {
 }, .id = "event")
 print(window_table, n = Inf)
 write_csv(window_table, file.path(dir_output, "sensibilidad_ventana.csv"))
+guardar(ventanas = window_table)
 
 # =============================================================================
 # B. Event study by blocks (reference: [-13, -1])
@@ -58,6 +59,9 @@ m_trend <- feols(log_precio ~ pre_far + pre_mid + post_near + post_mid + post_fa
                  data = peb, cluster = ~codigo)
 etable(m_base, m_trend, headers = c("No trends", "Comuna trends"),
        keep = c("pre_far", "pre_mid", "post_near", "post_mid", "post_far"))
+bloques_terms <- c("pre_far", "pre_mid", "post_near", "post_mid", "post_far")
+guardar(bloques = list(base = lapply(setNames(bloques_terms, bloques_terms), coef_info, m = m_base),
+                       trend = lapply(setNames(bloques_terms, bloques_terms), coef_info, m = m_trend)))
 
 bloques <- tibble(term   = c("pre_far", "pre_mid", "ref", "post_near", "post_mid", "post_far"),
                   centro = c(-39, -20, -7, 6, 20, 39))
@@ -128,18 +132,35 @@ numPre  <- sum(per < 0)
 numPost <- sum(per >= 0)
 l_vec   <- rep(1 / numPost, numPost)     # average post-period effect
 
-orig <- constructOriginalCS(betahat = b, sigma = V, numPrePeriods = numPre,
-                            numPostPeriods = numPost, l_vec = l_vec)
-rm_sens <- createSensitivityResults_relativeMagnitudes(
-  betahat = b, sigma = V, numPrePeriods = numPre, numPostPeriods = numPost,
-  l_vec = l_vec, Mbarvec = seq(0, 1.5, by = 0.5))
-print(orig)
-print(rm_sens)
-write_csv(bind_rows(mutate(as_tibble(orig), Mbar = 0, method = "Original"),
-                    as_tibble(rm_sens)), file.path(dir_output, "honestdid_rival.csv"))
+# HonestDiD loads compiled solvers (CVXR, TruncatedNormal, nleqslv). If one
+# cannot load, report it and continue: the rest of the analysis does not
+# depend on this step.
+honest_ok <- tryCatch({
+  orig <- constructOriginalCS(betahat = b, sigma = V, numPrePeriods = numPre,
+                              numPostPeriods = numPost, l_vec = l_vec)
+  rm_sens <- createSensitivityResults_relativeMagnitudes(
+    betahat = b, sigma = V, numPrePeriods = numPre, numPostPeriods = numPost,
+    l_vec = l_vec, Mbarvec = seq(0, 1.5, by = 0.1))
+  print(orig)
+  print(rm_sens)
+  # Some HonestDiD versions return lb/ub as one-column matrices: flatten first.
+  honest_tbl <- bind_rows(mutate(as_tibble(orig), Mbar = 0, method = "Original"), as_tibble(rm_sens)) %>%
+    mutate(across(c(lb, ub), ~ as.numeric(.x)), Delta = as.character(Delta))
+  write_csv(honest_tbl, file.path(dir_output, "honestdid_rival.csv"))
+  robustos <- honest_tbl %>% filter(method != "Original")
+  quiebre <- robustos %>% filter(lb <= 0, ub >= 0) %>% pull(Mbar)
+  guardar(honest = robustos, honest_quiebre = if (length(quiebre)) min(quiebre) else NA_real_,
+          n_rival_entrada = nrow(ev$ev_entrada_rival))
 
-p_honest <- createSensitivityPlot_relativeMagnitudes(rm_sens, orig)
-save_plot(p_honest, "honestdid_rival.png", readme = TRUE)
+  p_honest <- createSensitivityPlot_relativeMagnitudes(rm_sens, orig)
+  save_plot(p_honest, "honestdid_rival.png", readme = TRUE)
+  TRUE
+}, error = function(e) {
+  message("\nHonestDiD step skipped: ", conditionMessage(e),
+          "\nIf the message mentions a blocked .dll (Windows Smart App Control / Application ",
+          "Control), see 'Troubleshooting' in README.md.")
+  FALSE
+})
 
 # =============================================================================
 # E. Rival-brand exit DiD
@@ -149,5 +170,6 @@ section("E. Rival-brand exit")
 pe_sal_rival <- event_panel(panel, ev$ev_salida_rival, window = 52)
 m_sal_rival  <- feols(log_precio ~ post | codigo + semana_ord, data = pe_sal_rival, cluster = ~codigo)
 etable(m_sal_rival, headers = "Rival-brand exit")
+guardar(salida_rival = coef_info(m_sal_rival, "post"))
 
 cat("Event study finished.\n")

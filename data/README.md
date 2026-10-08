@@ -4,7 +4,7 @@ Input files are not versioned (see `.gitignore`). All come from the public *Benc
 
 There are two ways to reproduce the analysis:
 
-1. **Start from a pre-built station-week panel (fastest):** place `panel_estacion_semana.csv` directly in `data/`.
+1. **Start from a pre-built station-week panel (fastest):** place `panel_estacion_semana.csv` (or the compressed `panel_estacion_semana.csv.gz`) directly in `data/`.
 2. **Rebuild the panel from the raw CNE archive:** place the yearly raw files (`2012.csv.bz2` ... `2026.csv.bz2`; plain, `.bz2`, `.gz` or `.zip` CSVs all work) in `data/raw_cne/`. `R/01_build_panel.R` will call `scripts/build_panel.py` automatically when the pre-built panel is absent. Install the Python dependencies first with `pip install -r requirements.txt`.
 
 Optional inputs can also be placed directly in `data/`:

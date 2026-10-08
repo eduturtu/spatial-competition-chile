@@ -72,6 +72,10 @@ m_sal_todas   <- feols(log_precio ~ post | codigo + semana_ord, data = pe_salida
 m_sal_limpias <- feols(log_precio ~ post | codigo + semana_ord,
                        data = filter(pe_salida, codigo_evento %in% salidas_limpias), cluster = ~codigo)
 etable(m_sal_todas, m_sal_limpias, headers = c("All exits", "Clean exits"))
+guardar(seleccion = list(dif_reporte = mean(det$rel_exit - det$rel_cont),
+                         p_reporte = t.test(det$rel_exit, det$rel_cont, paired = TRUE)$p.value,
+                         n_limpias = length(salidas_limpias), n_det = nrow(det),
+                         limpias = coef_info(m_sal_limpias, "post")))
 
 # =============================================================================
 # B. Entrant / exiter brand

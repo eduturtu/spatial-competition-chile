@@ -1,5 +1,7 @@
 # Spatial Competition and Retail Gasoline Prices in Chile
 
+[Read the paper (PDF, in Spanish)](paper/paper_competencia_espacial.pdf)
+
 Does the entry or exit of a nearby gas station change the prices of incumbent stations? I apply the event-study design of Taylor and Muehlegger (2025) to a station-week panel of retail gasoline prices from Chile's National Energy Commission (CNE): about 973,000 station-weeks from 2,022 stations over 743 weeks (January 2012 to March 2026), built from 9.2 million raw price reports.
 
 Methods: two-way fixed effects · event study · spatial competition measures (Haversine, validated against driving distances) · window and block-dynamics diagnostics · Rambachan–Roth (HonestDiD) sensitivity to parallel-trends violations · Conley standard errors
@@ -7,7 +9,7 @@ Methods: two-way fixed effects · event study · spatial competition measures (H
 ## Main findings
 
 - Exit has a precisely estimated null effect. The exit of a competitor within 1 km leaves incumbent prices unchanged: the 95% confidence interval rules out effects larger than about 0.1% of the retail price. The null holds in every event window (±13 to ±52 weeks), with clustering by station or municipality and Conley errors, for rival-brand exits, and after removing exits that may reflect selection.
-- The apparent entry effect is not robust. A ±52-week DiD gives an entry effect of −0.18%. However, incumbent prices are already falling before entry: both pre-entry blocks are positive and significant relative to the quarter before entry, and the trajectory declines steadily through the event without a break. The estimate shrinks as the window narrows and is indistinguishable from zero at ±13 weeks. I assess its robustness to parallel-trends violations with Rambachan–Roth (HonestDiD) sensitivity analysis.
+- The apparent entry effect is not robust. A ±52-week DiD gives an entry effect of −0.18%. However, incumbent prices are already falling before entry: both pre-entry blocks are positive and significant relative to the quarter before entry, and the trajectory declines steadily through the event without a break. The estimate shrinks as the window narrows and is indistinguishable from zero at ±13 weeks. In a Rambachan–Roth (HonestDiD) sensitivity analysis, the robust confidence set includes zero once post-entry violations of parallel trends are allowed to reach 70% of the largest pre-entry violation (M̄ = 0.7).
 - Common shocks dominate price variation. Week fixed effects account for 98.4% of the variation in log retail prices, highlighting the importance of common national shocks. This pattern is consistent with the dominant role of common wholesale-cost movements and with pricing mechanisms documented in the Chilean gasoline-market literature (Lemus and Luco 2021; Luco 2019). The decomposition does not by itself identify which common component matters, or tacit coordination.
 
 ![Incumbent price around nearby entry](figures/pretrend_bloques.png)
@@ -16,7 +18,7 @@ Methods: two-way fixed effects · event study · spatial competition measures (H
 
 ![HonestDiD sensitivity](figures/honestdid_rival.png)
 
-*Rambachan–Roth robust confidence sets for the average post-entry effect (rival-brand entry), as a function of how large post-entry violations of parallel trends may be relative to pre-entry ones (M̄).*
+*Rambachan–Roth robust confidence sets for the average post-entry effect (rival-brand entry), as a function of how large post-entry violations of parallel trends may be relative to pre-entry ones (M̄). The set includes zero from M̄ = 0.7.*
 
 ## Reproducing the results
 
@@ -24,7 +26,7 @@ Methods: two-way fixed effects · event study · spatial competition measures (H
 source("run_all.R")
 ```
 
-This checks dependencies, cleans the data, builds entry and exit events, estimates every model, writes tables and figures to `output/` (README figures to `figures/`) and compiles the paper. Console logs for each step go to `output/logs/`.
+This checks dependencies, cleans the data, builds entry and exit events, estimates every model, writes tables and figures to `output/` (README figures to `figures/`) and compiles the paper. Every number in the paper is read from `output/resultados_paper.rds`, which the analysis scripts write, so the text cannot drift from the code. Console logs for each step go to `output/logs/`.
 
 Requirements: R ≥ 4.2 and the packages listed in `R/00_setup.R`. If a `renv.lock` file is present, `run_all.R` restores the pinned R environment automatically; after the first successful full-data run, create and commit it with `renv::init()` / `renv::snapshot()`. A validated `data/panel_estacion_semana.csv` is sufficient to reproduce the econometric analysis. To rebuild that panel from the raw CNE archive, Python 3 plus `pip install -r requirements.txt` are also required. See [`data/README.md`](data/README.md).
 
@@ -37,6 +39,11 @@ Requirements: R ≥ 4.2 and the packages listed in `R/00_setup.R`. If a `renv.lo
 | 5 | `R/04_event_study.R` | Window sensitivity, block and weekly event studies, rival-brand entry, HonestDiD |
 | 6 | `R/05_robustness.R` | Selection in exits, entrant brand, operator proxy, co-movement |
 | 7 | `R/06_mechanisms.R` | Variance decomposition, effects relative to margins, pass-through |
+
+## Troubleshooting
+
+- Word tables (`output/*.docx`) are optional. If `modelsummary` cannot write them, the run continues with the LaTeX tables.
+- On Windows, "An Application Control policy has blocked this file" when loading a package `.dll` (seen with `nleqslv`, a HonestDiD dependency) comes from Smart App Control or a similar policy, not from the code. Reinstalling the package outside the renv cache usually helps: `renv::settings$use.cache(FALSE)` and then `renv::rebuild("nleqslv")`. If the policy still blocks it, the HonestDiD step is skipped with a message and the rest of the analysis and the paper are still produced.
 
 ## Repository structure
 

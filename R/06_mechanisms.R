@@ -70,6 +70,9 @@ varianza <- tibble(
             sd_cross_section, sd_weekly_change))
 print(varianza)
 write_csv(varianza, file.path(dir_output, "mecanismo_varianza.csv"))
+guardar(varianza = list(r2_semana = R2_semana, r2_estacion = R2_estacion,
+                        r2_semana_intra_anio = R2_semana_intra_anio,
+                        r2_estacion_residuo = R2_estacion_en_residuo))
 
 # =============================================================================
 # C. Between vs within
@@ -114,6 +117,10 @@ if (!file.exists(path_margins)) {
                     .names = "{.col}_of_margin"))
     print(efectos)
     write_csv(efectos, file.path(dir_output, "efectos_relativos_margen.csv"))
+    guardar(margen = list(share = margin_share,
+                          entrada = efectos$coef_pct_of_margin[efectos$evento == "entrada"],
+                          salida_ci = c(efectos$ci_low_pct_of_margin[efectos$evento == "salida"],
+                                        efectos$ci_high_pct_of_margin[efectos$evento == "salida"])))
   } else {
     cat("Margin series or main effects not found. Items available in the file:\n")
     print(distinct(mg, item, tipo), n = 50)
@@ -132,6 +139,7 @@ if (!file.exists(path_margins)) {
   m_pt <- lm(dlret ~ dlcost, data = serie)
   m_as <- lm(dlret ~ up + dn, data = serie)
   cat(sprintf("Contemporaneous pass-through: %.3f\n", coef(m_pt)["dlcost"]))
+  guardar(passthrough = unname(coef(m_pt)["dlcost"]))
   cat(sprintf("Asymmetry: cost up = %.3f | cost down = %.3f | diff = %+.3f\n",
               coef(m_as)["up"], coef(m_as)["dn"], coef(m_as)["up"] - coef(m_as)["dn"]))
 }

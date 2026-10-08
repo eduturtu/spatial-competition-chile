@@ -14,7 +14,7 @@ raw_dir <- here::here("data", "raw_cne")
 builder <- here::here("scripts", "build_panel.py")
 
 if (file.exists(path_panel_raw)) {
-  message("Station-week panel already present at data/panel_estacion_semana.csv; skipping build.")
+  message("Station-week panel already present at data/", basename(path_panel_raw), "; skipping build.")
 } else {
   raw_files <- list.files(raw_dir, pattern = "\\.csv(\\.bz2|\\.gz|\\.zip)?$", full.names = TRUE)
   if (length(raw_files) == 0L) {

@@ -29,7 +29,11 @@ dir_output  <- here("output")
 dir_figures <- here("figures")      # versioned: figures shown in the README
 for (d in c(dir_derived, dir_output, dir_figures)) dir.create(d, showWarnings = FALSE, recursive = TRUE)
 
+# The station-week panel may be stored plain or gzip-compressed.
 path_panel_raw <- file.path(dir_data, "panel_estacion_semana.csv")
+if (!file.exists(path_panel_raw) && file.exists(paste0(path_panel_raw, ".gz"))) {
+  path_panel_raw <- paste0(path_panel_raw, ".gz")
+}
 path_pairs     <- file.path(dir_data, "pares_distancia_manejo.csv")
 path_margins   <- file.path(dir_data, "sh_precios_margenes_semanales_rm.xlsx")
 path_panel     <- file.path(dir_derived, "panel_limpio.rds")
@@ -139,6 +143,25 @@ fix_mojibake <- function(x) {
   x
 }
 norm_text <- function(x) toupper(stringr::str_squish(fix_mojibake(as.character(x))))
+
+# ---- Results used by the paper ----------------------------------------------
+# Every number the paper reports is saved here by the script that computes it;
+# paper/paper_competencia_espacial.Rmd reads this file, so text and tables
+# cannot drift from the code.
+path_results <- file.path(dir_output, "resultados_paper.rds")
+guardar <- function(...) {
+  r <- if (file.exists(path_results)) readRDS(path_results) else list()
+  nuevos <- list(...)
+  r[names(nuevos)] <- nuevos
+  saveRDS(r, path_results)
+  invisible(r)
+}
+# Coefficient, SE, p-value, N and within R2 of one term of a fixest model
+coef_info <- function(m, term) {
+  ct <- fixest::coeftable(m)
+  list(b = unname(ct[term, 1]), se = unname(ct[term, 2]), p = unname(ct[term, 4]),
+       n = stats::nobs(m), wr2 = unname(fixest::r2(m, "wr2")))
+}
 
 section <- function(title) cat("\n", strrep("=", 70), "\n ", title, "\n", strrep("=", 70), "\n", sep = "")
 

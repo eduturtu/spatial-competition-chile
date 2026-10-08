@@ -36,7 +36,17 @@ panel %>%
   print()
 
 panel %>% distinct(codigo, nom_region)   %>% count(nom_region, sort = TRUE)   %>% print(n = 20)
-panel %>% distinct(codigo, distribuidor) %>% count(distribuidor, sort = TRUE) %>% print(n = 15)
+marcas <- panel %>% distinct(codigo, distribuidor) %>% count(distribuidor, sort = TRUE)
+print(marcas, n = 15)
+
+desc_var <- function(x) list(mean = mean(x), sd = sd(x), min = min(x), median = median(x), max = max(x))
+guardar(
+  desc = list(precio = desc_var(panel$precio), c1 = desc_var(panel$n_comp_1km),
+              c2 = desc_var(panel$n_comp_2km), c3 = desc_var(panel$n_comp_3km),
+              c5 = desc_var(panel$n_comp_5km)),
+  marcas = setNames(marcas$n, marcas$distribuidor)[c("COPEC", "SHELL", "PETROBRAS", "ARAMCO")],
+  precio_ini = mean(panel$precio[panel$year == min(panel$year)]),
+  precio_fin = mean(panel$precio[panel$year >= 2024]))
 
 # =============================================================================
 # 2. TWFE: number of competitors by radius (Table 1)
@@ -48,6 +58,8 @@ modelo_2km <- feols(log_precio ~ n_comp_2km | codigo + year_week, data = panel, 
 modelo_3km <- feols(log_precio ~ n_comp_3km | codigo + year_week, data = panel, cluster = ~codigo)
 modelo_5km <- feols(log_precio ~ n_comp_5km | codigo + year_week, data = panel, cluster = ~codigo)
 etable(modelo_1km, modelo_2km, modelo_3km, modelo_5km, headers = c("1 km", "2 km", "3 km", "5 km"))
+guardar(radios = list(r1 = coef_info(modelo_1km, "n_comp_1km"), r2 = coef_info(modelo_2km, "n_comp_2km"),
+                      r3 = coef_info(modelo_3km, "n_comp_3km"), r5 = coef_info(modelo_5km, "n_comp_5km")))
 
 # =============================================================================
 # 3. Pre vs post MEPCO (descriptive split; not a causal estimate of MEPCO)
@@ -66,6 +78,8 @@ modelo_post_3km <- feols(log_precio ~ n_comp_3km | codigo + year_week, data = po
 etable(modelo_pre_1km, modelo_post_1km, modelo_pre_2km, modelo_post_2km,
        modelo_pre_3km, modelo_post_3km,
        headers = c("Pre 1km", "Post 1km", "Pre 2km", "Post 2km", "Pre 3km", "Post 3km"))
+guardar(mepco = list(pre = coef_info(modelo_pre_1km, "n_comp_1km"),
+                     post = coef_info(modelo_post_1km, "n_comp_1km")))
 cat("Caveat: SIPCO (2011-2014), the oil price collapse and tax changes overlap with this split.\n")
 
 # =============================================================================
@@ -89,6 +103,9 @@ etable(modelo_1km, modelo_1km_limpio, modelo_mensual_1km, modelo_mensual_2km,
        headers = c("Baseline", "No brand changes", "Month FE 1km", "Month FE 2km"))
 etable(modelo_rural, modelo_solo_urbano, modelo_solo_rural,
        headers = c("Interaction", "Urban", "Rural"))
+guardar(robustez_twfe = list(limpio = coef_info(modelo_1km_limpio, "n_comp_1km"),
+                             mensual = coef_info(modelo_mensual_1km, "n_comp_1km"),
+                             rural = coef_info(modelo_rural, "n_comp_1km:rural")))
 
 # =============================================================================
 # 5. Validation: Haversine vs Google Maps driving distance (Figure A2)
@@ -104,6 +121,16 @@ if (file.exists(path_pairs)) {
     summarise(n = n(), mean = mean(ratio), median = median(ratio), sd = sd(ratio),
               p10 = quantile(ratio, 0.10), p90 = quantile(ratio, 0.90))
   cat(sprintf("Pairs: %d | correlation: %.4f\n", nrow(pares), cor_dist))
+  # What enters the regressions is the count of rivals within a radius: compare
+  # the 5 km count under each metric, station by station, within the sample.
+  conteos <- pares %>%
+    group_by(codigo1) %>%
+    summarise(n_hav = sum(dist_haversine <= 5), n_man = sum(dist_manejo_km <= 5), .groups = "drop")
+  cor_conteo <- cor(conteos$n_hav, conteos$n_man)
+  cat(sprintf("Correlation of 5 km competitor counts (Haversine vs driving): %.3f\n", cor_conteo))
+  guardar(validacion = list(n_pares = nrow(pares), cor = cor_dist,
+                            mediana_ratio = median(pares$ratio[pares$ratio <= 5]),
+                            cor_conteo_5km = cor_conteo))
   print(ratio_stats)
 
   p_validacion <- pares %>% filter(ratio <= 5) %>%
@@ -149,6 +176,8 @@ etable(modelo_entrada, modelo_salida, headers = c("Entry", "Exit"))
 # 95% CI for the exit effect, in percent of price
 ci_sal <- confint(modelo_salida)["post", ] * 100
 cat(sprintf("Exit effect 95%% CI: [%.3f%%, %.3f%%] of price\n", ci_sal[1], ci_sal[2]))
+guardar(tm = list(entrada = coef_info(modelo_entrada, "post"), salida = coef_info(modelo_salida, "post"),
+                  ci_salida = unname(unlist(ci_sal))))
 
 # Saved for 06_mechanisms.R (effects relative to the retail margin)
 efectos_principales <- map_dfr(list(entrada = modelo_entrada, salida = modelo_salida), function(m) {
@@ -179,6 +208,7 @@ modelos_het <- list(
   "Sal (5+)"  = fit_or_null(filter(panel_salidas,  mercado == "Muchos (5+)")))
 modelos_het <- compact(modelos_het)
 if (length(modelos_het) > 0) print(etable(modelos_het))
+guardar(het = lapply(modelos_het, coef_info, term = "post"))
 
 # =============================================================================
 # 8. Weekly event study, +-26 weeks
@@ -237,6 +267,8 @@ modelo_entrada_comuna <- feols(log_precio ~ post | codigo + fecha, data = panel_
 modelo_salida_comuna  <- feols(log_precio ~ post | codigo + fecha, data = panel_salidas_geo,  cluster = ~comuna)
 etable(modelo_entrada, modelo_entrada_comuna, modelo_salida, modelo_salida_comuna,
        headers = c("Ent (station)", "Ent (comuna)", "Exit (station)", "Exit (comuna)"))
+guardar(cluster_comuna = list(entrada = coef_info(modelo_entrada_comuna, "post"),
+                              salida = coef_info(modelo_salida_comuna, "post")))
 
 tryCatch({
   modelo_1km_conley     <- feols(log_precio ~ n_comp_1km | codigo + year_week, data = panel,
@@ -245,6 +277,8 @@ tryCatch({
                                  vcov = vcov_conley(lat = "lat", lon = "lon", cutoff = 5))
   modelo_salida_conley  <- feols(log_precio ~ post | codigo + fecha, data = panel_salidas_geo,
                                  vcov = vcov_conley(lat = "lat", lon = "lon", cutoff = 5))
+  guardar(conley = list(entrada = coef_info(modelo_entrada_conley, "post"),
+                        salida = coef_info(modelo_salida_conley, "post")))
   print(etable(modelo_1km, modelo_1km_comuna, modelo_1km_conley,
                headers = c("Station", "Comuna", "Conley 5km")))
   print(etable(modelo_entrada, modelo_entrada_comuna, modelo_entrada_conley,

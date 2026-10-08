@@ -8,6 +8,11 @@ source(here::here("R", "00_setup.R"))
 section("Data cleaning")
 
 panel_raw <- read_csv(path_panel_raw, show_col_types = FALSE)
+if (!inherits(panel_raw$fecha, "Date")) {
+  stop("`fecha` must be a date without time of day (found ", class(panel_raw$fecha)[1],
+       "). Rebuild the panel with scripts/build_panel.py.", call. = FALSE)
+}
+if (!is.na(SAMPLE_END)) panel_raw <- panel_raw %>% filter(fecha <= SAMPLE_END)
 cat(sprintf("Raw observations: %s\n", format(nrow(panel_raw), big.mark = ",")))
 
 n_high <- sum(panel_raw$precio > PRICE_MAX, na.rm = TRUE)
@@ -17,18 +22,12 @@ cat(sprintf("Dropped: price > %d: %d | price < %d: %d | NA: %d (%.2f%% of total)
             PRICE_MAX, n_high, PRICE_MIN, n_low, n_na,
             100 * (n_high + n_low + n_na) / nrow(panel_raw)))
 
-if (!inherits(panel_raw$fecha, "Date")) {
-  stop("`fecha` must be a date without time of day (found ", class(panel_raw$fecha)[1],
-       "). Rebuild the panel with scripts/build_panel.py.", call. = FALSE)
-}
-
 panel <- panel_raw %>%
   filter(!is.na(precio), precio >= PRICE_MIN, precio <= PRICE_MAX) %>%
   mutate(across(c(distribuidor, nom_comuna, nom_region), norm_text),
          log_precio = log(precio),
          year_month = format(fecha, "%Y-%m"),
          year       = year(fecha))
-if (!is.na(SAMPLE_END)) panel <- panel %>% filter(fecha <= SAMPLE_END)
 
 # semana_ord must count calendar weeks. Older panels numbered only the weeks
 # present in the data, so a multi-year gap collapsed into a few "weeks" and the
@@ -189,4 +188,18 @@ saveRDS(list(cambios_marca = cambios_marca, ubicaciones = ubicaciones, vida = vi
              ev_entrada_rival = ev_entrada_rival, ev_salida_rival = ev_salida_rival,
              entradas_cal = entradas_cal, salidas_cal = salidas_cal, eventos_cal = eventos_cal),
         file.path(dir_derived, "eventos.rds"))
+unlink(path_results)   # results of a previous run are no longer valid
+guardar(
+  n_raw = nrow(panel_raw), n_drop = n_high + n_low + n_na,
+  n_obs = nrow(panel), n_estaciones = n_distinct(panel$codigo),
+  n_semanas = n_distinct(panel$year_week),
+  anio_ini = year(min(panel$fecha)), anio_fin = year(max(panel$fecha)),
+  fecha_fin = max(panel$fecha),
+  n_cambios_marca = length(cambios_marca),
+  pct_cambios_marca = 100 * length(cambios_marca) / n_distinct(panel$codigo),
+  n_censurados = length(censurados),
+  n_entradas = nrow(entradas_cal), n_salidas = nrow(salidas_cal),
+  n_incumbentes = nrow(incumbentes_cal),
+  n_exp_entrada = sum(eventos_cal$tipo_evento == "entrada"),
+  n_exp_salida  = sum(eventos_cal$tipo_evento == "salida"))
 cat("Saved data/derived/panel_limpio.rds and data/derived/eventos.rds\n")
