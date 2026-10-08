@@ -78,7 +78,7 @@ load_clean <- function() {
 }
 
 save_plot <- function(plot, name, width = 10, height = 6, readme = FALSE) {
-  ggsave(file.path(dir_output, name), plot, width = width, height = height, dpi = 300)
+  ggsave(file.path(dir_output, name), plot, width = width, height = height, dpi = 300, bg = "white")
   if (readme) file.copy(file.path(dir_output, name), file.path(dir_figures, name), overwrite = TRUE)
   invisible(file.path(dir_output, name))
 }

@@ -69,6 +69,10 @@ All inputs are public, from the CNE's *Bencina en Línea* / *Energía Abierta* p
 
 Taylor and Muehlegger (2025, NBER WP 33569) · Lemus and Luco (2021, JIE) · Rambachan and Roth (2023, ReStud) · Hastings (2004, AER) · Houde (2012, AER) · Barron, Taylor and Umbeck (2004, IJIO) · Lewis (2012, IJIO) · Luco (2019, AEJ: Micro)
 
+## License and citation
+
+Code under the MIT License (`LICENSE`). To cite this work, use the "Cite this repository" button (from `CITATION.cff`).
+
 ## Author
 
 Eduardo Munizaga, Facultad de Economía y Negocios, Universidad de Chile. Originally written as a research paper for Microeconomics III.

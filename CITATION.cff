@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this code or its results, please cite it as below."
+title: "Spatial Competition and Retail Gasoline Prices in Chile"
+type: software
+authors:
+  - family-names: Munizaga
+    given-names: Eduardo
+    affiliation: "Facultad de Economía y Negocios, Universidad de Chile"
+    email: emunizaga@fen.uchile.cl
+date-released: 2026-10-08
+repository-code: "https://github.com/eduturtu/spatial-competition-chile"
+license: MIT
+keywords:
+  - spatial competition
+  - retail gasoline
+  - event study
+  - industrial organization
+  - Chile
