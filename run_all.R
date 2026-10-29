@@ -20,7 +20,8 @@ steps <- c(
   "R/03_main_analysis.R",  # 4. TWFE, baseline entry/exit DiD, heterogeneity
   "R/04_event_study.R",    # 5. event-study dynamics, HonestDiD
   "R/05_robustness.R",     # 6. selection in exits, brand heterogeneity
-  "R/06_mechanisms.R"      # 7. variance decomposition, margins, pass-through
+  "R/06_mechanisms.R",     # 7. variance decomposition, margins, pass-through
+  "R/07_staggered_event_study.R"  # 8. Sun-Abraham with never-treated controls
 )
 
 log_dir <- here::here("output", "logs")
@@ -34,9 +35,10 @@ for (s in steps) {
   tryCatch(
     source(here::here(s), local = new.env(), echo = FALSE, print.eval = TRUE),
     finally = { sink(); close(con) })
+  invisible(gc(verbose = FALSE))   # free memory between steps (07 is memory-hungry)
 }
 
-# 8. Compile the paper (needs pandoc: bundled with RStudio, or https://pandoc.org)
+# 9. Compile the paper (needs pandoc: bundled with RStudio, or https://pandoc.org)
 if (rmarkdown::pandoc_available()) {
   message("Compiling paper/paper_competencia_espacial.Rmd")
   rmarkdown::render(here::here("paper", "paper_competencia_espacial.Rmd"), quiet = TRUE)

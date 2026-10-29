@@ -29,6 +29,17 @@ panel <- panel_raw %>%
          year_month = format(fecha, "%Y-%m"),
          year       = year(fecha))
 
+# One region per station: the official name of its most recent report. Labels
+# differ across archive eras, and stations in Ñuble were reported under Biobío
+# before the region was created in 2018.
+region_estacion <- panel %>%
+  group_by(codigo) %>% slice_max(fecha, n = 1, with_ties = FALSE) %>% ungroup() %>%
+  transmute(codigo, region_canon = canon_region(nom_region))
+panel <- panel %>%
+  left_join(region_estacion, by = "codigo") %>%
+  mutate(nom_region = region_canon) %>% select(-region_canon)
+cat(sprintf("Regions after harmonising labels: %d\n", n_distinct(panel$nom_region)))
+
 # semana_ord must count calendar weeks. Older panels numbered only the weeks
 # present in the data, so a multi-year gap collapsed into a few "weeks" and the
 # 26-week event buffers lost their meaning.

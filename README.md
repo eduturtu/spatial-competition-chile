@@ -4,21 +4,18 @@
 
 Does the entry or exit of a nearby gas station change the prices of incumbent stations? I apply the event-study design of Taylor and Muehlegger (2025) to a station-week panel of retail gasoline prices from Chile's National Energy Commission (CNE): about 973,000 station-weeks from 2,022 stations over 743 weeks (January 2012 to March 2026), built from 9.2 million raw price reports.
 
-Methods: two-way fixed effects · event study · spatial competition measures (Haversine, validated against driving distances) · window and block-dynamics diagnostics · Rambachan–Roth (HonestDiD) sensitivity to parallel-trends violations · Conley standard errors
+Methods: event study · Sun–Abraham estimator with never-treated controls · two-way fixed effects baseline · Rambachan–Roth (HonestDiD) sensitivity to parallel-trends violations · spatial competition measures (Haversine, validated against driving distances) · Conley standard errors
 
 ## Main findings
 
-- Exit has a precisely estimated null effect. The exit of a competitor within 1 km leaves incumbent prices unchanged: the 95% confidence interval rules out effects larger than about 0.1% of the retail price. The null holds in every event window (±13 to ±52 weeks), with clustering by station or municipality and Conley errors, for rival-brand exits, and after removing exits that may reflect selection.
-- The apparent entry effect is not robust. A ±52-week DiD gives an entry effect of −0.18%. However, incumbent prices are already falling before entry: both pre-entry blocks are positive and significant relative to the quarter before entry, and the trajectory declines steadily through the event without a break. The estimate shrinks as the window narrows and is indistinguishable from zero at ±13 weeks. In a Rambachan–Roth (HonestDiD) sensitivity analysis, the robust confidence set includes zero once post-entry violations of parallel trends are allowed to reach 70% of the largest pre-entry violation (M̄ = 0.7).
-- Common shocks dominate price variation. Week fixed effects account for 98.4% of the variation in log retail prices, highlighting the importance of common national shocks. This pattern is consistent with the dominant role of common wholesale-cost movements and with pricing mechanisms documented in the Chilean gasoline-market literature (Lemus and Luco 2021; Luco 2019). The decomposition does not by itself identify which common component matters, or tacit coordination.
+- Entry lowers incumbent prices. With the Sun–Abraham estimator and never-treated incumbents (no entry within 5 km) as controls, the entry of a competitor within 1 km reduces the incumbent's price by about 0.4% over the following year, about 6% of the gross retail margin, close to the ~7% Taylor and Muehlegger (2025) find in California. The effect appears at the entry date and deepens over the first year. It survives Rambachan–Roth violations of parallel trends of up to 0.8 times the largest pre-entry violation, with region-by-year and brand-by-year fixed effects (1.4 without them).
+- Exit has no effect at the event date. Incumbent prices do not change after a nearby rival stops operating (average post effect +0.04%, s.e. 0.04). They rise slightly over the year before the exit, consistent with a rival that winds down gradually.
+- The comparison group matters. A two-way fixed effects event study that uses already-treated stations as controls makes the entry effect look like a pre-existing trend. Most of that trend disappears with never-treated controls (Goodman-Bacon 2021; Sun and Abraham 2021).
+- Common shocks dominate price variation. Week fixed effects account for 98.4% of the variation in log retail prices, so local competition operates on a narrow margin. This is consistent with common wholesale-cost movements and with pricing mechanisms documented in the Chilean literature (Lemus and Luco 2021; Luco 2019).
 
-![Incumbent price around nearby entry](figures/pretrend_bloques.png)
+![Sun-Abraham event study](figures/sa_event_study.png)
 
-*Incumbent log price around the entry of a station within 1 km, by blocks of relative time (reference: the quarter before entry). The decline starts before entry and continues through it without a break.*
-
-![HonestDiD sensitivity](figures/honestdid_rival.png)
-
-*Rambachan–Roth robust confidence sets for the average post-entry effect (rival-brand entry), as a function of how large post-entry violations of parallel trends may be relative to pre-entry ones (M̄). The set includes zero from M̄ = 0.7.*
+*Incumbent log price around the entry and exit of a station within 1 km, by quarter relative to the event (reference: the quarter before). Sun–Abraham estimator with never-treated controls; station, week, region-by-year and brand-by-year fixed effects; 95% confidence intervals clustered by station.*
 
 ## Reproducing the results
 
@@ -39,6 +36,7 @@ Requirements: R ≥ 4.2 and the packages listed in `R/00_setup.R`. If a `renv.lo
 | 5 | `R/04_event_study.R` | Window sensitivity, block and weekly event studies, rival-brand entry, HonestDiD |
 | 6 | `R/05_robustness.R` | Selection in exits, entrant brand, operator proxy, co-movement |
 | 7 | `R/06_mechanisms.R` | Variance decomposition, effects relative to margins, pass-through |
+| 8 | `R/07_staggered_event_study.R` | Sun–Abraham event studies with never-treated controls, HonestDiD |
 
 ## Troubleshooting
 
@@ -67,7 +65,7 @@ All inputs are public, from the CNE's *Bencina en Línea* / *Energía Abierta* p
 
 ## References
 
-Taylor and Muehlegger (2025, NBER WP 33569) · Lemus and Luco (2021, JIE) · Rambachan and Roth (2023, ReStud) · Hastings (2004, AER) · Houde (2012, AER) · Barron, Taylor and Umbeck (2004, IJIO) · Lewis (2012, IJIO) · Luco (2019, AEJ: Micro)
+Taylor and Muehlegger (2025, NBER WP 33569) · Sun and Abraham (2021, JoE) · Goodman-Bacon (2021, JoE) · Lemus and Luco (2021, JIE) · Rambachan and Roth (2023, ReStud) · Hastings (2004, AER) · Houde (2012, AER) · Barron, Taylor and Umbeck (2004, IJIO) · Lewis (2012, IJIO) · Luco (2019, AEJ: Micro)
 
 ## License and citation
 
@@ -75,4 +73,4 @@ Code under the MIT License (`LICENSE`). To cite this work, use the "Cite this re
 
 ## Author
 
-Eduardo Munizaga, Facultad de Economía y Negocios, Universidad de Chile. Originally written as a research paper for Microeconomics III.
+Eduardo Munizaga, Facultad de Economía y Negocios, Universidad de Chile. Originally written as a research paper for Microeconomics III. Thanks to Joaquín Martínez O. for suggesting the never-treated design with region-by-year and brand-by-year fixed effects.

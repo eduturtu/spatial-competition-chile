@@ -142,7 +142,41 @@ fix_mojibake <- function(x) {
   }
   x
 }
-norm_text <- function(x) toupper(stringr::str_squish(fix_mojibake(as.character(x))))
+norm_text <- function(x) {
+  x <- fix_mojibake(as.character(x))
+  x <- gsub("­", "", x)                 # invisible soft hyphen ("LOS RÍ­OS")
+  x <- gsub("[‘’]", "'", x)        # curly apostrophe ("O’HIGGINS")
+  toupper(stringr::str_squish(x))
+}
+
+# Region names change across archive eras ("METROPOLITANA" vs "METROPOLITANA DE
+# SANTIAGO", "BÍO BÍO" vs "DEL BIOBÍO"). Map every variant to one of the 16
+# official regions, so region x year fixed effects do not split a region in two.
+canon_region <- function(x) {
+  k <- stringi::stri_trans_general(norm_text(x), "Latin-ASCII")
+  reglas <- c(
+    "ARICA"        = "ARICA Y PARINACOTA",
+    "TARAPACA"     = "TARAPAC\u00c1",
+    "ANTOFAGASTA"  = "ANTOFAGASTA",
+    "ATACAMA"      = "ATACAMA",
+    "COQUIMBO"     = "COQUIMBO",
+    "VALPARAISO"   = "VALPARA\u00cdSO",
+    "METROPOLITANA" = "METROPOLITANA",
+    "HIGGINS"      = "O'HIGGINS",
+    "MAULE"        = "MAULE",
+    "NUBLE"        = "\u00d1UBLE",
+    "BIO ?BIO"     = "BIOB\u00cdO",
+    "ARAUCANIA"    = "LA ARAUCAN\u00cdA",
+    "LOS RIOS"     = "LOS R\u00cdOS",
+    "LOS LAGOS"    = "LOS LAGOS",
+    "AYSEN"        = "AYS\u00c9N",
+    "MAGALLANES"   = "MAGALLANES")
+  out <- rep(NA_character_, length(k))
+  for (p in names(reglas)) out[is.na(out) & grepl(p, k)] <- reglas[[p]]
+  sin_match <- unique(x[is.na(out) & !is.na(x)])
+  if (length(sin_match)) warning("Unmapped region labels: ", paste(sin_match, collapse = "; "))
+  out
+}
 
 # ---- Results used by the paper ----------------------------------------------
 # Every number the paper reports is saved here by the script that computes it;
